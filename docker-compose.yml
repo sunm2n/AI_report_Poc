@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  # Ollama LLM Service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    # Apple Silicon (M1/M2/M3/M4) GPU 자동 지원
+    # 별도 설정 없이 Metal 가속 사용
+
+volumes:
+  ollama_data:
+    driver: local

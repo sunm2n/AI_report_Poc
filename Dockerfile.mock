@@ -1,0 +1,16 @@
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install minimal dependencies for mock server
+RUN pip install --no-cache-dir fastapi uvicorn
+
+# Copy mock server
+COPY tests/mock_spring.py .
+
+# Expose port
+EXPOSE 9000
+
+# Run mock server
+CMD ["python", "mock_spring.py"]
