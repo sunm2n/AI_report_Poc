@@ -87,20 +87,22 @@ class AIService:
         await semaphore_manager.acquire_internal()
 
         try:
-            # Read file contents
+            # Extract user's code lines only (not reading entire file)
             files_content = []
             for file_info in file_group:
-                abs_path = file_info["absolute_path"]
                 try:
-                    with open(abs_path, 'r', encoding='utf-8') as f:
-                        content = f.read()
-                        files_content.append({
-                            "path": file_info["file_path"],
-                            "content": content,
-                            "user_lines": file_info["user_lines"]
-                        })
+                    # Build content from user's code lines only
+                    user_code = "\n".join(
+                        line["code"] for line in file_info["user_code_lines"]
+                    )
+
+                    files_content.append({
+                        "path": file_info["file_path"],
+                        "content": user_code,
+                        "user_lines": file_info["user_lines"]
+                    })
                 except Exception as e:
-                    logger.warning(f"Failed to read {abs_path}: {e}")
+                    logger.warning(f"Failed to extract user code from {file_info['file_path']}: {e}")
 
             if not files_content:
                 return {"error": "No files could be read"}
@@ -256,17 +258,19 @@ class AIService:
         if is_map:
             return """You are a Senior Code Reviewer.
 
-Analyze the provided code files in XML format. Focus on the lines contributed by the target user (indicated by <user_lines>).
+**IMPORTANT**: You are analyzing ONLY the code lines written by the target user.
+The <content> section contains EXCLUSIVELY the code that this specific user contributed.
+Do NOT assume there is other code - you are seeing the complete contribution of this user in these files.
 
-Provide a concise summary in Korean JSON format:
+Analyze the provided code in XML format and provide a concise summary in JSON format:
 {
   "files_analyzed": ["file1.java", "file2.java"],
-  "main_features": "주요 기능 설명 (한글, 1-2 문장)",
+  "main_features": "Main features implemented by this developer (1-2 sentences, English)",
   "tech_stack": ["Java", "Spring", "Redis"],
-  "notable_patterns": "주목할 만한 코드 패턴 또는 설계 (한글, 1-2 문장)"
+  "notable_patterns": "Notable code patterns or design (1-2 sentences, English)"
 }
 
-Be concise and focus on what the code does, not how it's written."""
+**IMPORTANT**: Use English for all text fields. Be concise and focus on what THIS USER's code does."""
 
         else:  # Reduce
             return """You are a Tech Lead preparing a portfolio report.

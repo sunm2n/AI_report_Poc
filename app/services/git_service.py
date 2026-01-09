@@ -63,7 +63,7 @@ class GitService:
             repo_url,
             self.workspace_path,
             branch=branch,
-            depth=1  # Shallow clone to save disk space and memory
+            single_branch=True  # Clone only the specified branch with full history
         )
 
     async def filter_files_by_user(self, target_user: str) -> List[Dict[str, any]]:
@@ -74,7 +74,7 @@ class GitService:
             target_user: GitHub username to filter by
 
         Returns:
-            List of dicts containing file_path and user_lines
+            List of dicts containing file_path, user_lines, and user_code_lines
 
         Raises:
             GitBlameError: If blame operation fails
@@ -102,14 +102,15 @@ class GitService:
                 if '.git' in rel_path.parts:
                     continue
 
-                # Run blame analysis
-                user_lines = await self._analyze_file_blame(str(rel_path), target_user)
+                # Run blame analysis to extract user's code lines
+                blame_result = await self._analyze_file_blame(str(rel_path), target_user)
 
-                if user_lines > 0:
+                if blame_result["line_count"] > 0:
                     filtered_files.append({
                         "file_path": str(rel_path),
                         "absolute_path": str(file_path),
-                        "user_lines": user_lines
+                        "user_lines": blame_result["line_count"],
+                        "user_code_lines": blame_result["user_code_lines"]
                     })
 
             logger.info(f"Filtered {len(filtered_files)} files with contributions from {target_user}")
@@ -118,16 +119,24 @@ class GitService:
         except Exception as e:
             raise GitBlameError(f"Failed to filter files by user: {e}")
 
-    async def _analyze_file_blame(self, rel_path: str, target_user: str) -> int:
+    async def _analyze_file_blame(self, rel_path: str, target_user: str) -> Dict[str, any]:
         """
-        Count lines contributed by target_user using git blame
+        Extract code lines contributed by target_user using git blame
 
         Args:
             rel_path: Relative file path from repository root
             target_user: GitHub username
 
         Returns:
-            Number of lines contributed by target_user
+            Dict with line_count and user_code_lines:
+            {
+                "line_count": 10,
+                "user_code_lines": [
+                    {"line_number": 5, "code": "def calculate():"},
+                    {"line_number": 6, "code": "    return x + y"},
+                    ...
+                ]
+            }
         """
         try:
             loop = asyncio.get_event_loop()
@@ -137,20 +146,27 @@ class GitService:
                 rel_path
             )
 
-            # Count lines by target_user
-            user_line_count = sum(
-                1 for commit, lines in blame_output
-                if commit.author.name == target_user or commit.author.email.startswith(target_user)
-            )
+            # Extract lines written by target_user
+            user_code_lines = []
+            for commit, lines in blame_output:
+                if commit.author.name == target_user or commit.author.email.startswith(target_user):
+                    for line in lines:
+                        user_code_lines.append({
+                            "line_number": len(user_code_lines) + 1,  # Sequential numbering
+                            "code": line
+                        })
 
-            return user_line_count
+            return {
+                "line_count": len(user_code_lines),
+                "user_code_lines": user_code_lines
+            }
 
         except GitCommandError:
             # File might be binary or have issues, skip it
-            return 0
+            return {"line_count": 0, "user_code_lines": []}
         except Exception as e:
             logger.warning(f"Error analyzing blame for {rel_path}: {e}")
-            return 0
+            return {"line_count": 0, "user_code_lines": []}
 
     def _blame_sync(self, rel_path: str):
         """Synchronous git blame operation"""
