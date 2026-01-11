@@ -215,7 +215,7 @@ class AIService:
             system_prompt = self._get_system_prompt(is_map)
 
             if self.provider == "openai":
-                response = await self._call_openai(system_prompt, prompt)
+                response = await self._call_openai(system_prompt, prompt, is_map=is_map)
             else:  # ollama
                 response = await self._call_ollama(system_prompt, prompt)
 
@@ -225,8 +225,12 @@ class AIService:
         except Exception as e:
             raise AIServiceError(f"AI API call failed: {e}")
 
-    async def _call_openai(self, system_prompt: str, user_prompt: str) -> str:
-        """Call OpenAI API"""
+    async def _call_openai(self, system_prompt: str, user_prompt: str, is_map: bool = True) -> str:
+        """Call OpenAI API with phase-appropriate token limits"""
+        # Map phase: 2000 tokens sufficient for file group summaries
+        # Reduce phase: 8000 tokens for comprehensive final report
+        max_tokens = 2000 if is_map else 8000
+
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=[
@@ -234,7 +238,7 @@ class AIService:
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.3,
-            max_tokens=2000
+            max_tokens=max_tokens
         )
         return response.choices[0].message.content
 
