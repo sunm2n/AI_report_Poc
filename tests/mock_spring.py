@@ -50,7 +50,7 @@ async def update_report(report_id: int, request: Request):
         for i, contrib in enumerate(result.get('key_contributions', []), 1):
             logger.info(f"  {i}. {contrib}")
         logger.info(f"\nCode Quality:\n{result.get('code_quality', 'N/A')}")
-        logger.info(f"\nProject Tree:\n{result.get('project_tree', 'N/A')[:500]}...")
+        logger.info(f"\nProject Tree:\n{result.get('project_tree', 'N/A')}")
         logger.info("=" * 70)
 
     elif payload.get('status') == 'FAILED':
