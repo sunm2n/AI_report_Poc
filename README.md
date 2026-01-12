@@ -22,20 +22,7 @@ GitHub 리포지토리 분석 기반 포트폴리오 생성 서비스의 FastAPI
 
 ## 빠른 시작 (Quick Start)
 
-### 1. Ollama Docker 실행
-
-```bash
-# Ollama 컨테이너 시작
-docker-compose up -d
-
-# 모델 다운로드 (최초 1회만)
-docker exec -it ollama ollama pull llama3.2
-
-# 모델 확인
-docker exec -it ollama ollama list
-```
-
-### 2. Python 가상환경 설정
+### 1. Python 가상환경 설정
 
 ```bash
 # 가상환경 생성 및 활성화
@@ -47,21 +34,30 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 ```
 
-### 3. 환경 변수 확인
+### 2. 환경 변수 확인
 
-`.env` 파일이 이미 생성되어 있으며, Ollama 기본 설정이 되어 있습니다:
+`.env` 파일이 이미 생성되어 있으며, **OpenAI GPT-4o 기본 설정**이 되어 있습니다:
 
+```env
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-your-api-key-here
+OPENAI_MODEL=gpt-4o
+```
+
+Ollama (로컬 모델)를 사용하려면 `.env` 수정:
 ```env
 LLM_PROVIDER=ollama
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2
 ```
 
-OpenAI를 사용하려면 `.env` 수정:
-```env
-LLM_PROVIDER=openai
-OPENAI_API_KEY=sk-your-api-key-here
-OPENAI_MODEL=gpt-4-turbo-preview
+**참고**: Ollama 사용 시 Docker 컨테이너 실행 필요:
+```bash
+# Ollama 컨테이너 시작
+docker-compose up -d
+
+# 모델 다운로드 (최초 1회만)
+docker exec -it ollama ollama pull llama3.2
 ```
 
 ## 실행 방법
@@ -82,7 +78,18 @@ python -m app.main
 
 FastAPI 서버가 `http://localhost:8000`에서 실행됩니다.
 
-**실행 중 확인:**
+**실행 중 확인 (OpenAI 사용 시):**
+```
+==================================================
+AI Code Analysis Service Starting...
+LLM Provider: openai
+OpenAI Model: gpt-4o
+Global Semaphore Limit: 2
+Internal Semaphore Limit: 10
+==================================================
+```
+
+**실행 중 확인 (Ollama 사용 시):**
 ```
 ==================================================
 AI Code Analysis Service Starting...
@@ -293,18 +300,28 @@ docker exec -it ollama ollama run llama3.2 "Hello"
 자세한 문서는 [docs/](./docs/) 디렉토리를 참조하세요.
 
 ### 주요 문서
-- **[POC 테스트 결과](./docs/poc-tests/2026-01-08/POC_TEST_RESULT.md)** - 2026-01-08 POC 종합 보고서
-- **[AI 분석 로그](./docs/poc-tests/2026-01-08/AI_ANALYSIS_LOGS.md)** - 11개 모듈 상세 분석
-- **[Gemini 통합 가이드](./docs/poc-tests/2026-01-08/GEMINI_INTEGRATION_GUIDE.md)** - 프로덕션 준비
-- **[아키텍처 문서](./docs/architecture/AI_archi.md)** - 전체 시스템 설계
-- **[Docker 가이드](./docs/guides/DOCKER_GUIDE.md)** - Ollama 관리
+
+#### 아키텍처 & 설계
+- **[아키텍처 문서](./docs/architecture/AI_archi.md)** - 전체 시스템 설계 (Map-Reduce 패턴, Resource Update Pattern)
+
+#### 마이그레이션 & 설정
+- **[GPT-4o 마이그레이션 결과](./docs/poc-tests/2026-01-11/gpt-migration-result.md)** - Ollama → OpenAI GPT-4o 전환 완료 보고서
+- **[Docker 가이드](./docs/guides/DOCKER_GUIDE.md)** - Ollama 관리 (로컬 모델 사용 시)
+
+#### POC 테스트 결과
+- **[2026-01-08 POC 테스트](./docs/poc-tests/2026-01-08/POC_TEST_RESULT.md)** - 최초 POC 종합 보고서
+- **[2026-01-08 AI 분석 로그](./docs/poc-tests/2026-01-08/AI_ANALYSIS_LOGS.md)** - 11개 모듈 상세 분석
+- **[2026-01-08 V2 분석 로그](./docs/poc-tests/2026-01-08_V2/AI_ANALYSIS_LOGS_V2.md)** - 개선된 분석 결과
+- **[2026-01-11 V3 분석 로그](./docs/poc-tests/2026-01-11/AI_ANALTSIS_LOGS_V3.md)** - 최신 분석 결과
+- **[Gemini 통합 가이드](./docs/poc-tests/2026-01-08/GEMINI_INTEGRATION_GUIDE.md)** - 프로덕션 준비 가이드
 
 전체 문서 목록: [docs/README.md](./docs/README.md)
 
 ## 다음 단계
 
-- [ ] Gemini API 통합 (파싱 문제 해결)
+- [x] **OpenAI GPT-4o 마이그레이션 완료** (2026-01-11)
 - [ ] Spring Boot 백엔드 통합
 - [ ] PDF 생성 기능 추가 (Spring 측)
 - [ ] 프로덕션 배포 (AWS EC2, Docker)
 - [ ] 성능 최적화 및 메모리 프로파일링
+- [ ] Gemini API 통합 (선택적)
