@@ -308,3 +308,4 @@ docker exec -it ollama ollama run llama3.2 "Hello"
 - [ ] PDF 생성 기능 추가 (Spring 측)
 - [ ] 프로덕션 배포 (AWS EC2, Docker)
 - [ ] 성능 최적화 및 메모리 프로파일링
+
